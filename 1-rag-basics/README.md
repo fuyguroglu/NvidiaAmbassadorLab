@@ -1,16 +1,25 @@
-# RAG Basics: Simple Q&A System
+# RAG Basics: Flexible Q&A System
 
-This module implements a **Retrieval-Augmented Generation (RAG)** system - a powerful technique that combines document retrieval with LLM generation to answer questions based on your own documents.
+A **Retrieval-Augmented Generation (RAG)** system with multiple backend options, designed to work on any hardware - from basic laptops to powerful workstations!
 
 ## 🎯 What is RAG?
 
-**RAG (Retrieval-Augmented Generation)** is a technique that enhances LLMs by:
+**RAG (Retrieval-Augmented Generation)** combines document retrieval with LLM generation to answer questions based on your own documents:
 
-1. **Retrieving** relevant information from a knowledge base
-2. **Augmenting** the LLM prompt with this context
-3. **Generating** answers grounded in your specific documents
+1. **Retrieve** relevant information from your documents using semantic search
+2. **Augment** the LLM prompt with retrieved context
+3. **Generate** answers grounded in your specific documents
 
-Unlike traditional chatbots that only use their training data, RAG systems can answer questions about **YOUR** specific documents without requiring model fine-tuning!
+Unlike traditional chatbots that rely only on training data, RAG systems answer questions about **YOUR** documents without requiring model fine-tuning!
+
+## ✨ Key Features
+
+- 🎛️ **Multiple Backend Options** - From retrieval-only (works everywhere!) to local LLMs and cloud APIs
+- 🌐 **Beautiful Web Interface** - User-friendly Gradio UI, no command-line needed
+- 💻 **Hardware Flexible** - Works on laptops with 4GB RAM to workstations with GPUs
+- 📚 **Multi-format Support** - PDF and TXT documents
+- 🚀 **Easy Setup** - Conda environment + pip install, ready in minutes
+- 🔧 **Configurable** - Adjust chunk size, retrieval count, and backends
 
 ## 🏗️ Architecture
 
@@ -21,7 +30,7 @@ Unlike traditional chatbots that only use their training data, RAG systems can a
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│              Embedding Model (Sentence BERT)             │
+│         Embedding Model (Sentence Transformers)          │
 │         Converts question to vector embedding            │
 └─────────────────────┬───────────────────────────────────┘
                       │
@@ -33,307 +42,303 @@ Unlike traditional chatbots that only use their training data, RAG systems can a
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
-│              Retrieved Context + Question                │
+│           Retrieved Context + Question                   │
 │                        ↓                                 │
-│                  Language Model                          │
-│              (Microsoft Phi-2 / Others)                  │
+│              Language Model (Optional)                   │
+│      (TinyLlama / Phi / Groq / OpenAI / etc.)           │
 │                        ↓                                 │
 │                  Generated Answer                        │
 └─────────────────────────────────────────────────────────┘
 ```
 
-## 📁 Files
+## 📁 Project Structure
 
-- **`rag_simple.py`** - Core RAG implementation
-  - Document loading (PDF, TXT)
-  - Text chunking
-  - Embedding creation
-  - Vector database management
-  - Question answering
-
-- **`app.py`** - Web interface using Gradio
-  - User-friendly chat interface
-  - Document management
-  - Context visualization
-
-- **`data/`** - Your documents go here!
-  - Supports: `.txt`, `.pdf`
+```
+1-rag-basics/
+├── config.py                   # Backend configurations
+├── rag_flexible.py             # Main RAG implementation
+├── app_simple.py               # Gradio web interface
+├── test_system.py              # Test with retrieval-only mode
+├── test_with_llm.py            # Test with LLM backend
+├── start_web_interface.sh      # Linux launcher script
+├── start_web_interface.bat     # Windows launcher script
+├── requirements.txt            # Python dependencies
+├── SETUP_GUIDE.md             # Detailed setup instructions
+├── CLAUDE.md                  # Development notes
+└── data/                      # Your documents go here!
+```
 
 ## 🚀 Quick Start
 
-### 1. Install Dependencies
+### 1. Setup Environment
 
-Make sure you have the required packages:
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions for Windows and Linux!
 
-```bash
-pip install torch transformers langchain langchain-community chromadb sentence-transformers gradio pypdf
-```
-
-### 2. Add Documents
-
-Place your documents in the `data/` directory:
+**Quick version:**
 
 ```bash
-cd 1-rag-basics/data
-# Copy your .txt or .pdf files here
+# Create conda environment
+conda create -n nvidia_rag python=3.11 -y
+conda activate nvidia_rag
+
+# Install dependencies
+pip install -r requirements.txt
 ```
 
-### 3. Run the Application
-
-**Option A: Web Interface (Recommended)**
+### 2. Add Your Documents
 
 ```bash
-python app.py
+# Place your PDF or TXT files in the data folder
+cp your-document.pdf data/
 ```
 
-Then open http://localhost:7860 in your browser!
+### 3. Launch Web Interface
 
-**Option B: Command Line**
-
+**Linux/WSL:**
 ```bash
-python rag_simple.py
+./start_web_interface.sh
 ```
+
+**Windows:**
+```
+start_web_interface.bat
+```
+
+**Or manually:**
+```bash
+python app_simple.py
+```
+
+Then open **http://localhost:7860** in your browser!
 
 ## 🎮 Using the Web Interface
 
-1. **Click "List Documents"** - Check that your files are loaded
-2. **Click "Initialize RAG System"** - Wait for setup to complete (2-5 minutes first time)
-3. **Ask Questions** - Type your questions and get answers!
-4. **View Context** - Use the Advanced section to see retrieved chunks
+1. **Select Backend** - Choose based on your hardware:
+   - **Retrieval Only** - Works on ANY computer (< 1GB RAM)
+   - **TinyLlama** - Small local model (3-4GB RAM)
+   - **Phi-2/Phi-3** - Better local models (5-6GB RAM)
+   - **Groq** - Fast cloud API (Free tier available!)
+   - **OpenAI/Anthropic** - Premium cloud APIs
 
-## 🧪 How It Works
+2. **Click "🚀 Initialize System"** - Wait for setup (downloads model on first run)
 
-### Step 1: Document Processing
+3. **Ask Questions** - Type your questions and get answers with source citations!
 
-```python
-# Load documents
-documents = rag.load_documents()
+4. **View System Info** - Click "ℹ️ Show System Info" to see configuration
 
-# Split into chunks (default: 500 chars with 50 char overlap)
-chunks = rag.split_documents(documents)
+## 🎛️ Backend Options
+
+### Retrieval-Only Mode (Recommended for Beginners)
+
+- **RAM**: < 1GB
+- **Setup**: None needed
+- **Speed**: Very fast
+- **Output**: Shows relevant document chunks without generation
+
+Perfect for:
+- Learning how RAG retrieval works
+- Testing on any computer
+- Understanding document chunking
+
+### Local LLM Models
+
+#### TinyLlama
+- **RAM**: ~3-4GB
+- **Download**: ~2.2GB (first time only)
+- **Speed**: Fast on GPU, acceptable on CPU
+- **Quality**: Basic but functional
+
+#### Phi-2 / Phi-3 Mini
+- **RAM**: ~5-6GB
+- **Download**: ~5GB (first time only)
+- **Speed**: Medium
+- **Quality**: Good instruction following
+
+### Cloud API Models
+
+#### Groq (Recommended!)
+- **RAM**: < 1GB (runs in cloud)
+- **Cost**: Free tier available
+- **Speed**: Very fast
+- **Quality**: Excellent
+- **Setup**: `export GROQ_API_KEY=your-key`
+- **Sign up**: https://console.groq.com
+
+#### OpenAI / Anthropic
+- **RAM**: < 1GB (runs in cloud)
+- **Cost**: Paid (pay per use)
+- **Quality**: Excellent
+- **Setup**: Set API key environment variable
+
+## 🧪 Testing
+
+### Test Retrieval-Only Mode
+
+```bash
+python test_system.py
 ```
 
-**Why chunking?**
-- LLMs have context limits
-- Smaller chunks = more precise retrieval
-- Overlap ensures context continuity
+Shows how the semantic search retrieves relevant chunks.
 
-### Step 2: Embedding Creation
+### Test with LLM
+
+```bash
+python test_with_llm.py
+```
+
+Downloads TinyLlama (first run) and generates answers.
+
+## 🔧 Configuration
+
+Edit `config.py` or pass parameters to `FlexibleRAG`:
 
 ```python
-# Create embeddings using Sentence-BERT
-embeddings = HuggingFaceEmbeddings(
-    model_name="sentence-transformers/all-MiniLM-L6-v2"
+from rag_flexible import FlexibleRAG
+
+rag = FlexibleRAG(
+    backend="retrieval_only",     # or "tinyllama", "phi2", "groq", etc.
+    data_dir="./data",
+    chunk_size=500,                # Characters per chunk
+    chunk_overlap=50,              # Overlap between chunks
+    k_retrieve=3                   # Number of chunks to retrieve
 )
+
+rag.setup()
+result = rag.query("Your question here")
 ```
-
-**What are embeddings?**
-- Vector representations of text
-- Similar text = similar vectors
-- Enables semantic search (meaning-based, not just keywords)
-
-### Step 3: Vector Store
-
-```python
-# Store in ChromaDB for fast similarity search
-vectorstore = Chroma.from_documents(
-    documents=chunks,
-    embedding=embeddings
-)
-```
-
-**Why a vector database?**
-- Efficient similarity search
-- Scales to millions of documents
-- Persistent storage
-
-### Step 4: Retrieval & Generation
-
-```python
-# Retrieve top-K relevant chunks
-retriever = vectorstore.as_retriever(k=3)
-
-# Generate answer with context
-answer = qa_chain.run(question)
-```
-
-## 🎛️ Configuration Options
-
-### Model Selection
-
-Edit `rag_simple.py` or `app.py`:
-
-```python
-rag = SimpleRAG(
-    model_name="microsoft/phi-2",           # LLM for generation
-    embedding_model="sentence-transformers/all-MiniLM-L6-v2",  # Embeddings
-    chunk_size=500,                         # Chunk size in characters
-    chunk_overlap=50,                       # Overlap between chunks
-    k_retrieve=3                            # Number of chunks to retrieve
-)
-```
-
-### Recommended Models
-
-| Model | Size | VRAM | Speed | Quality |
-|-------|------|------|-------|---------|
-| microsoft/phi-2 | 2.7B | ~6GB | Fast | Good |
-| meta-llama/Llama-2-7b-chat-hf | 7B | ~14GB | Medium | Better |
-| mistralai/Mistral-7B-Instruct-v0.2 | 7B | ~14GB | Medium | Better |
-
-### Embedding Models
-
-| Model | Dimensions | Speed | Quality |
-|-------|-----------|-------|---------|
-| all-MiniLM-L6-v2 | 384 | Very Fast | Good |
-| all-mpnet-base-v2 | 768 | Fast | Better |
-| instructor-large | 768 | Slow | Best |
 
 ## 📊 Understanding Parameters
 
 ### Chunk Size & Overlap
 
+- **chunk_size=500**: Size of text chunks in characters
+  - Smaller (200-300): More precise retrieval
+  - Larger (800-1000): More context per chunk
+
+- **chunk_overlap=50**: Overlap between consecutive chunks
+  - Ensures context isn't lost at chunk boundaries
+
+### K (Retrieval Count)
+
+- **k_retrieve=3**: Number of chunks to retrieve
+  - Lower (1-2): Faster, more focused
+  - Higher (5-10): More comprehensive, may include noise
+
+## 🐛 Common Issues & Solutions
+
+### "Out of Memory" Error
+
+**Solution**: Use retrieval-only mode or cloud API:
 ```python
-chunk_size = 500      # Characters per chunk
-chunk_overlap = 50    # Overlap between chunks
+backend = "retrieval_only"  # or "groq"
 ```
-
-**Trade-offs:**
-- **Smaller chunks** (200-300): More precise, but may miss context
-- **Larger chunks** (800-1000): More context, but less precise
-- **More overlap**: Better context preservation, but more redundancy
-
-### K (Number of Retrieved Chunks)
-
-```python
-k_retrieve = 3  # Retrieve top 3 most relevant chunks
-```
-
-**Trade-offs:**
-- **Lower K** (1-2): Faster, more focused, but may miss information
-- **Higher K** (5-10): More comprehensive, but slower and may include noise
-
-## 🔬 Experiments to Try
-
-### 1. Compare Chunk Sizes
-
-```python
-# Test different chunk sizes
-for chunk_size in [200, 500, 1000]:
-    rag = SimpleRAG(chunk_size=chunk_size)
-    # Compare answer quality
-```
-
-### 2. Different Retrieval Strategies
-
-- **Similarity search** (default): Vector similarity
-- **MMR (Maximal Marginal Relevance)**: Diversity + relevance
-- **Similarity with threshold**: Only above certain similarity score
-
-### 3. Model Comparison
-
-Try different LLMs and compare:
-- Answer quality
-- Speed
-- VRAM usage
-- Hallucination rate
-
-## 🐛 Troubleshooting
-
-### "CUDA out of memory"
-
-**Solutions:**
-1. Use smaller model (phi-2 instead of 7B)
-2. Reduce batch size
-3. Use CPU (slower): Set `device="cpu"`
 
 ### "No documents found"
 
-**Check:**
-1. Files are in `1-rag-basics/data/`
-2. Supported formats: `.txt`, `.pdf`
-3. Files are not empty or corrupted
+**Check**:
+- Files are in `data/` folder
+- Files are `.pdf` or `.txt` format
+- Files are not empty
 
-### "Poor answer quality"
+### API Key Not Found
 
-**Try:**
-1. Add more relevant documents
-2. Increase `k_retrieve` (retrieve more chunks)
-3. Adjust `chunk_size` (smaller for precision, larger for context)
-4. Use better embedding model
-5. Use larger LLM
+**Set environment variable**:
+```bash
+# Linux/Mac/WSL
+export GROQ_API_KEY="your-key-here"
 
-### "Too slow"
-
-**Optimizations:**
-1. Use smaller embedding model (all-MiniLM-L6-v2)
-2. Use smaller LLM (phi-2)
-3. Reduce `k_retrieve`
-4. Use GPU if available
-
-## 📈 Performance Benchmarking
-
-Track these metrics:
-
-```python
-import time
-
-start = time.time()
-result = rag.query("Your question")
-latency = time.time() - start
-
-print(f"Latency: {latency:.2f}s")
-print(f"Chunks retrieved: {len(result['sources'])}")
-print(f"Answer length: {len(result['answer'])} chars")
+# Windows (PowerShell)
+$env:GROQ_API_KEY="your-key-here"
 ```
+
+### Model Download is Slow
+
+- This is normal! Models are 2-5GB
+- Downloads only happen once
+- Subsequent runs are fast (model is cached)
 
 ## 🎓 Learning Objectives
 
-By completing this module, you should understand:
+By completing this module, you will understand:
 
-- ✅ What RAG is and why it's useful
-- ✅ How document chunking affects retrieval
-- ✅ The role of embeddings in semantic search
-- ✅ Trade-offs between retrieval parameters
-- ✅ When to use RAG vs fine-tuning
+- ✅ What RAG is and when to use it
+- ✅ How semantic search works with embeddings
+- ✅ Document chunking strategies and trade-offs
+- ✅ Retrieval quality vs quantity
+- ✅ Local vs cloud LLM backends
+- ✅ Real-world RAG challenges (retrieval accuracy, hallucination)
 
-## 🔜 Next Steps
+## 🔬 Experiments to Try
 
-1. **Experiment** with different chunk sizes and K values
-2. **Add your own documents** and test domain-specific questions
-3. **Try different models** and compare quality vs speed
-4. **Move to Module 2** (Fine-tuning) to understand alternatives to RAG
+### 1. Compare Backends
 
-## 📚 Additional Resources
+Try the same question with different backends:
+- Retrieval-only (see what chunks are found)
+- TinyLlama (small model behavior)
+- Groq (high-quality cloud model)
 
-- [LangChain Documentation](https://python.langchain.com/docs/get_started/introduction)
-- [ChromaDB Guide](https://docs.trychroma.com/)
-- [Sentence Transformers](https://www.sbert.net/)
-- [RAG Paper](https://arxiv.org/abs/2005.11401)
+Compare answer quality, speed, and whether answers stay grounded in context!
+
+### 2. Adjust Chunk Size
+
+```python
+# Try different chunk sizes
+for size in [200, 500, 1000]:
+    rag = FlexibleRAG(chunk_size=size)
+    # Test the same question
+```
+
+### 3. Increase K (Retrieval Count)
+
+```python
+# Retrieve more chunks
+rag = FlexibleRAG(k_retrieve=5)
+```
+
+Does more context help or hurt answer quality?
+
+### 4. Test Retrieval Quality
+
+Use retrieval-only mode to see what chunks are found. Are they relevant? If not, try:
+- Different chunk sizes
+- More overlap
+- Better phrased questions
 
 ## 💡 RAG vs Fine-tuning
 
 | Aspect | RAG | Fine-tuning |
 |--------|-----|-------------|
 | **Setup Time** | Minutes | Hours/Days |
-| **Data Required** | Any documents | Labeled examples |
-| **Updates** | Add new docs instantly | Retrain model |
-| **Cost** | Low (inference only) | High (training compute) |
-| **Use Case** | Dynamic knowledge, Q&A | Behavior, style, format |
-| **Hallucination** | Lower (grounded in docs) | Higher |
+| **Data Required** | Documents | Labeled examples |
+| **Updates** | Add docs instantly | Retrain model |
+| **Cost** | Low | High (training compute) |
+| **Use Case** | Q&A, knowledge base | Task adaptation, style |
+| **Hallucination** | Lower (grounded) | Higher |
 
-**When to use RAG:**
-- Frequently changing information
-- Large document collections
-- Need source citations
+**Use RAG when:**
+- You have a knowledge base or documents
+- Information changes frequently
+- You need source citations
 - Quick prototyping
 
-**When to use Fine-tuning:**
-- Specific task/domain adaptation
-- Style or tone requirements
-- No access to documents at runtime
-- Behavioral changes needed
+**Use Fine-tuning when:**
+- Adapting model behavior or style
+- No documents available at runtime
+- Specific task performance
+- Consistent format requirements
+
+## 📚 Additional Resources
+
+- [SETUP_GUIDE.md](SETUP_GUIDE.md) - Detailed setup for Windows/Linux
+- [LangChain Documentation](https://python.langchain.com/)
+- [ChromaDB Guide](https://docs.trychroma.com/)
+- [Sentence Transformers](https://www.sbert.net/)
+- [RAG Paper](https://arxiv.org/abs/2005.11401)
+
+## 🙏 Acknowledgments
+
+Built as part of the NVIDIA Ambassador Lab program, designed to teach RAG fundamentals with accessibility in mind - works on any hardware!
 
 ---
 
-**Ready to dive deeper?** Move on to `2-fine-tuning/` to learn about model adaptation!
+**Ready to learn more?** Check out the next module on fine-tuning to see an alternative approach to customizing LLMs!
