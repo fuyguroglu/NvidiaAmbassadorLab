@@ -17,7 +17,8 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 - 🎛️ **Multiple Backend Options** - From retrieval-only (works everywhere!) to local LLMs and cloud APIs
 - 🌐 **Beautiful Web Interface** - User-friendly Gradio UI, no command-line needed
 - 💻 **Hardware Flexible** - Works on laptops with 4GB RAM to workstations with GPUs
-- 📚 **Multi-format Support** - PDF and TXT documents
+- 📚 **Multi-format Support** - PDF, TXT, and pre-chunked documents (JSON/TXT)
+- ✂️ **Flexible Chunking** - Auto-chunk documents OR use your own pre-made chunks
 - 🚀 **Easy Setup** - Conda environment + pip install, ready in minutes
 - 🔧 **Configurable** - Adjust chunk size, retrieval count, and backends
 
@@ -58,39 +59,90 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 ├── config.py                   # Backend configurations
 ├── rag_flexible.py             # Main RAG implementation
 ├── app_simple.py               # Gradio web interface
+├── detect_gpu.py              # GPU detection utility
+├── setup.sh                   # Automatic setup for Linux/WSL
+├── setup.bat                  # Automatic setup for Windows
 ├── test_system.py              # Test with retrieval-only mode
 ├── test_with_llm.py            # Test with LLM backend
 ├── start_web_interface.sh      # Linux launcher script
 ├── start_web_interface.bat     # Windows launcher script
-├── requirements.txt            # Python dependencies
+├── requirements-gpu.txt        # GPU version dependencies
+├── requirements-cpu.txt        # CPU-only dependencies
+├── requirements-base.txt       # Base dependencies
+├── requirements.txt            # Legacy (kept for compatibility)
 ├── SETUP_GUIDE.md             # Detailed setup instructions
+├── PRECHUNKED_FORMAT.md       # Pre-chunked document guide (NEW!)
+├── GPU_SETUP_INFO.md          # GPU detection system info
 ├── CLAUDE.md                  # Development notes
 └── data/                      # Your documents go here!
+    ├── example_chunks.json    # Example pre-chunked (JSON)
+    └── example_chunks.txt     # Example pre-chunked (text)
 ```
 
 ## 🚀 Quick Start
 
 ### 1. Setup Environment
 
-See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions for Windows and Linux!
+**🎮 We have automatic setup that detects your GPU!**
 
-**Quick version:**
+**Automatic Setup (Recommended):**
+
+```bash
+# Linux/WSL
+./setup.sh
+
+# Windows
+setup.bat
+```
+
+The script will:
+- ✅ Detect if you have an NVIDIA GPU
+- ✅ Install the right PyTorch version (CPU-only or GPU with CUDA)
+- ✅ Save bandwidth (CPU version is ~200MB vs ~2-3GB for GPU)
+- ✅ Set up everything automatically
+
+**Manual Setup:**
+
+See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions!
 
 ```bash
 # Create conda environment
 conda create -n nvidia_rag python=3.11 -y
 conda activate nvidia_rag
 
-# Install dependencies
-pip install -r requirements.txt
+# Check your GPU
+python detect_gpu.py
+
+# Install dependencies based on your hardware:
+pip install -r requirements-gpu.txt  # If you have NVIDIA GPU
+# OR
+pip install -r requirements-cpu.txt  # If you don't have GPU (smaller!)
 ```
 
 ### 2. Add Your Documents
 
+**Option A: Automatic Chunking (Easy)**
 ```bash
 # Place your PDF or TXT files in the data folder
 cp your-document.pdf data/
+cp your-notes.txt data/
 ```
+
+**Option B: Pre-Chunked Documents (Advanced)**
+```bash
+# Use pre-chunked files for precise control
+# Files must end with _chunks.json or _chunks.txt
+cp my_faq_chunks.json data/
+cp definitions_chunks.txt data/
+```
+
+**You can mix both!** See [PRECHUNKED_FORMAT.md](PRECHUNKED_FORMAT.md) for details.
+
+**Supported formats:**
+- 📄 `.pdf` - Auto-chunked
+- 📝 `.txt` - Auto-chunked
+- 📦 `*_chunks.json` - Pre-chunked (your control!)
+- 📦 `*_chunks.txt` - Pre-chunked (simple format)
 
 ### 3. Launch Web Interface
 

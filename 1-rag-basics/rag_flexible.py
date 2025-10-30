@@ -13,6 +13,7 @@ Supports:
 """
 
 import os
+import json
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 
@@ -22,6 +23,7 @@ from langchain_community.document_loaders import (
     PyPDFLoader,
 )
 from langchain_text_splitters import RecursiveCharacterTextSplitter
+from langchain_core.documents import Document
 
 # Embeddings and vector store
 from langchain_community.embeddings import HuggingFaceEmbeddings
@@ -104,23 +106,148 @@ class FlexibleRAG:
                 raise ValueError(f"API key check failed: {message}")
             print(f"   {message}")
 
+    def load_prechunked_json(self, json_file: Path) -> List[Document]:
+        """
+        Load pre-chunked documents from JSON file.
+
+        Expected format:
+        [
+          {
+            "content": "chunk text...",
+            "metadata": {"source": "...", "topic": "...", ...}
+          },
+          ...
+        ]
+
+        Args:
+            json_file: Path to JSON file
+
+        Returns:
+            List of Document objects
+        """
+        with open(json_file, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+
+        documents = []
+        for idx, item in enumerate(data):
+            content = item.get('content', '').strip()
+            if not content:
+                continue
+
+            metadata = item.get('metadata', {})
+            metadata['source'] = metadata.get('source', json_file.name)
+            metadata['chunk_index'] = idx
+            metadata['pre_chunked'] = True
+
+            documents.append(Document(
+                page_content=content,
+                metadata=metadata
+            ))
+
+        return documents
+
+    def load_prechunked_txt(self, txt_file: Path) -> List[Document]:
+        """
+        Load pre-chunked documents from text file.
+
+        Format: Chunks separated by "---" on its own line
+        Optional metadata after "META:" in format: key=value, key2=value2
+
+        Args:
+            txt_file: Path to text file
+
+        Returns:
+            List of Document objects
+        """
+        with open(txt_file, 'r', encoding='utf-8') as f:
+            content = f.read()
+
+        # Split by separator
+        chunks = content.split('\n---\n')
+        documents = []
+
+        for idx, chunk in enumerate(chunks):
+            chunk = chunk.strip()
+            if not chunk or chunk.startswith('#'):
+                continue
+
+            # Extract metadata if present
+            metadata = {
+                'source': txt_file.name,
+                'chunk_index': idx,
+                'pre_chunked': True
+            }
+
+            if 'META:' in chunk:
+                parts = chunk.split('META:', 1)
+                chunk_text = parts[0].strip()
+                meta_str = parts[1].strip()
+
+                # Parse metadata
+                for pair in meta_str.split(','):
+                    pair = pair.strip()
+                    if '=' in pair:
+                        key, value = pair.split('=', 1)
+                        metadata[key.strip()] = value.strip()
+            else:
+                chunk_text = chunk
+
+            if chunk_text:
+                documents.append(Document(
+                    page_content=chunk_text,
+                    metadata=metadata
+                ))
+
+        return documents
+
     def load_documents(self) -> List[Any]:
         """
         Load all documents from the data directory.
 
-        Supports: .txt, .pdf files
+        Supports:
+        - .pdf files (auto-chunked)
+        - .txt files (auto-chunked)
+        - *_chunks.json files (pre-chunked)
+        - *_chunks.txt files (pre-chunked)
 
         Returns:
             List of loaded documents
         """
         print(f"\n📂 Loading documents from {self.data_dir}...")
         documents = []
+        prechunked_count = 0
 
         if not self.data_dir.exists():
             raise FileNotFoundError(f"Data directory {self.data_dir} not found!")
 
-        # Load text files
-        txt_files = list(self.data_dir.glob("*.txt"))
+        # Load pre-chunked JSON files
+        json_chunk_files = list(self.data_dir.glob("*_chunks.json")) + list(self.data_dir.glob("*chunks.json"))
+        for json_file in json_chunk_files:
+            try:
+                chunks = self.load_prechunked_json(json_file)
+                documents.extend(chunks)
+                prechunked_count += len(chunks)
+                print(f"  ✓ Loaded pre-chunked: {json_file.name} ({len(chunks)} chunks)")
+            except Exception as e:
+                print(f"  ✗ Error loading {json_file.name}: {e}")
+
+        # Load pre-chunked TXT files
+        txt_chunk_files = list(self.data_dir.glob("*_chunks.txt")) + list(self.data_dir.glob("*chunks.txt"))
+        for txt_file in txt_chunk_files:
+            try:
+                chunks = self.load_prechunked_txt(txt_file)
+                documents.extend(chunks)
+                prechunked_count += len(chunks)
+                print(f"  ✓ Loaded pre-chunked: {txt_file.name} ({len(chunks)} chunks)")
+            except Exception as e:
+                print(f"  ✗ Error loading {txt_file.name}: {e}")
+
+        # Track files to skip (already loaded as pre-chunked)
+        prechunked_basenames = {f.stem.replace('_chunks', '').replace('chunks', '') for f in json_chunk_files + txt_chunk_files}
+
+        # Load regular text files (excluding pre-chunked)
+        txt_files = [f for f in self.data_dir.glob("*.txt")
+                     if not f.name.endswith('_chunks.txt') and not f.name.endswith('chunks.txt')]
         for txt_file in txt_files:
             try:
                 loader = TextLoader(str(txt_file), encoding='utf-8')
@@ -140,15 +267,23 @@ class FlexibleRAG:
                 print(f"  ✗ Error loading {pdf_file.name}: {e}")
 
         if not documents:
-            print("\n⚠️  No documents found! Please add .txt or .pdf files to the data/ directory.")
+            print("\n⚠️  No documents found! Please add files to the data/ directory.")
+            print("   Supported formats:")
+            print("   - .pdf, .txt (will be auto-chunked)")
+            print("   - *_chunks.json, *_chunks.txt (pre-chunked)")
             return []
 
         print(f"\n📚 Total documents loaded: {len(documents)}")
+        if prechunked_count > 0:
+            print(f"   ✓ {prechunked_count} pre-chunked")
+            print(f"   ✓ {len(documents) - prechunked_count} will be auto-chunked")
+
         return documents
 
     def split_documents(self, documents: List[Any]) -> List[Any]:
         """
         Split documents into smaller chunks for better retrieval.
+        Pre-chunked documents are kept as-is.
 
         Args:
             documents: List of documents to split
@@ -156,18 +291,31 @@ class FlexibleRAG:
         Returns:
             List of document chunks
         """
-        print(f"\n✂️  Splitting documents (size={self.chunk_size}, overlap={self.chunk_overlap})...")
+        # Separate pre-chunked from auto-chunk documents
+        prechunked = [doc for doc in documents if doc.metadata.get('pre_chunked', False)]
+        to_chunk = [doc for doc in documents if not doc.metadata.get('pre_chunked', False)]
 
-        text_splitter = RecursiveCharacterTextSplitter(
-            chunk_size=self.chunk_size,
-            chunk_overlap=self.chunk_overlap,
-            length_function=len,
-            separators=["\n\n", "\n", ". ", " ", ""]
-        )
+        all_chunks = list(prechunked)  # Start with pre-chunked
 
-        chunks = text_splitter.split_documents(documents)
-        print(f"   Created {len(chunks)} chunks")
-        return chunks
+        if to_chunk:
+            print(f"\n✂️  Splitting documents (size={self.chunk_size}, overlap={self.chunk_overlap})...")
+
+            text_splitter = RecursiveCharacterTextSplitter(
+                chunk_size=self.chunk_size,
+                chunk_overlap=self.chunk_overlap,
+                length_function=len,
+                separators=["\n\n", "\n", ". ", " ", ""]
+            )
+
+            new_chunks = text_splitter.split_documents(to_chunk)
+            all_chunks.extend(new_chunks)
+            print(f"   Created {len(new_chunks)} auto-chunks")
+
+        if prechunked:
+            print(f"   Kept {len(prechunked)} pre-chunks as-is")
+
+        print(f"\n📑 Total chunks: {len(all_chunks)}")
+        return all_chunks
 
     def create_embeddings(self):
         """Initialize the embedding model."""
@@ -323,6 +471,15 @@ Answer:"""
             return False
 
         chunks = self.split_documents(documents)
+
+        # Track chunk statistics for UI display
+        prechunked_count = sum(1 for c in chunks if c.metadata.get('pre_chunked', False))
+        autochunked_count = len(chunks) - prechunked_count
+        self._chunk_stats = {
+            'prechunked': prechunked_count,
+            'autochunked': autochunked_count,
+            'total': len(chunks)
+        }
 
         # Create embeddings and vector store
         self.create_embeddings()

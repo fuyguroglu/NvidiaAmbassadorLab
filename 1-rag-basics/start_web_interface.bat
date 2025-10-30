@@ -22,9 +22,30 @@ if %errorlevel% neq 0 (
 echo Environment activated!
 echo.
 
+REM Check GPU status
+echo Checking system capabilities...
+nvidia-smi >nul 2>nul
+if %errorlevel% equ 0 (
+    python -c "import torch; exit(0 if torch.cuda.is_available() else 1)" >nul 2>nul
+    if %errorlevel% equ 0 (
+        echo GPU detected and PyTorch CUDA enabled!
+    ) else (
+        echo ! GPU detected but PyTorch CUDA not available
+        echo   Consider reinstalling with: pip install -r requirements-gpu.txt
+    )
+) else (
+    echo Running in CPU mode
+)
+echo.
+
 REM Run the web interface
 echo Starting web interface...
-echo The interface will open in your browser at: http://localhost:7860
+echo.
+echo Access the interface at:
+echo   * http://localhost:7860
+echo   * http://127.0.0.1:7860
+echo.
+echo ! Don't use http://0.0.0.0:7860 - use localhost instead!
 echo.
 echo Press Ctrl+C to stop the server
 echo =========================================

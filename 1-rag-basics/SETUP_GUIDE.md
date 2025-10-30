@@ -25,10 +25,47 @@ Welcome! This guide will help you set up and run your first RAG (Retrieval-Augme
 - **Python**: Version 3.9 or higher (we recommend 3.11)
 - **Conda** or **Miniconda**: For managing Python environments
 - **RAM**: At least 4GB (more is better!)
-- **Disk Space**: ~5-10GB for models and dependencies
+- **Disk Space**:
+  - **CPU-only**: ~3-5GB (smaller PyTorch, no CUDA)
+  - **GPU version**: ~6-10GB (includes CUDA support)
 - **Internet**: For downloading models and packages
+- **GPU** (Optional): NVIDIA GPU for faster performance (not required!)
 
 ---
+
+## 🚀 Quick Start (Recommended)
+
+**We now have an automatic setup script that detects your GPU and installs the right version!**
+
+### Windows Quick Setup
+```cmd
+REM Download/clone the project, then:
+cd path\to\NvidiaAmbassadorLab\1-rag-basics
+setup.bat
+```
+
+### Linux/WSL Quick Setup
+```bash
+# Download/clone the project, then:
+cd path/to/NvidiaAmbassadorLab/1-rag-basics
+chmod +x setup.sh
+./setup.sh
+```
+
+The setup script will:
+1. ✅ Detect if you have an NVIDIA GPU
+2. ✅ Create the conda environment
+3. ✅ Install the appropriate PyTorch version (CPU or GPU)
+4. ✅ Install all other dependencies
+5. ✅ Guide you through the setup
+
+**That's it!** Skip to [Quick Start](#quick-start-after-installation) section.
+
+---
+
+## Manual Installation (Advanced)
+
+If you prefer manual control or the automatic script doesn't work:
 
 ## Installation by Operating System
 
@@ -88,17 +125,38 @@ conda init cmd.exe
 REM Then close and reopen Command Prompt
 ```
 
-#### Step 4: Install Dependencies
+#### Step 4: Check GPU and Install Dependencies
 
 ```cmd
 REM Make sure you're in the project folder and environment is activated
-pip install -r requirements.txt
+
+REM First, check if you have a GPU
+python detect_gpu.py
+
+REM Then install based on your hardware:
+
+REM Option A: Auto-detect (Recommended)
+REM If you have NVIDIA GPU, this installs GPU version, otherwise CPU version
+nvidia-smi
+if %errorlevel% equ 0 (
+    pip install -r requirements-gpu.txt
+) else (
+    pip install -r requirements-cpu.txt
+)
+
+REM Option B: Manual choice
+REM For GPU (if you have NVIDIA GPU - ~2-3GB download):
+pip install -r requirements-gpu.txt
+
+REM For CPU only (no GPU - ~200MB download):
+pip install -r requirements-cpu.txt
 ```
 
 **Windows-Specific Notes**:
-- This takes 10-20 minutes on Windows
+- **GPU version**: 10-20 minutes download (includes CUDA)
+- **CPU version**: 5-10 minutes download (much smaller)
 - Windows Defender might scan files - this is normal
-- If you get SSL errors, try: `pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements.txt`
+- If you get SSL errors, try: `pip install --trusted-host pypi.org --trusted-host files.pythonhosted.org -r requirements-cpu.txt`
 
 #### Step 5: Add Your Documents
 
@@ -193,14 +251,36 @@ conda activate nvidia_rag
 echo "cd ~/path/to/NvidiaAmbassadorLab/1-rag-basics && conda activate nvidia_rag" >> ~/.bashrc
 ```
 
-#### Step 4: Install Dependencies
+#### Step 4: Check GPU and Install Dependencies
 
 ```bash
-# Install requirements
-pip install -r requirements.txt
+# Make sure conda environment is activated
+
+# First, check if you have a GPU
+python detect_gpu.py
+
+# Then install based on your hardware:
+
+# Option A: Auto-detect (Recommended)
+if command -v nvidia-smi &> /dev/null; then
+    echo "Installing GPU version..."
+    pip install -r requirements-gpu.txt
+else
+    echo "Installing CPU version..."
+    pip install -r requirements-cpu.txt
+fi
+
+# Option B: Manual choice
+# For GPU (if you have NVIDIA GPU - ~2-3GB download):
+pip install -r requirements-gpu.txt
+
+# For CPU only (no GPU - ~200MB download):
+pip install -r requirements-cpu.txt
 ```
 
 **Linux-Specific Notes**:
+- **GPU version**: 10-20 minutes download (includes CUDA)
+- **CPU version**: 5-10 minutes download (much smaller)
 - If you get permission errors, DO NOT use `sudo pip`
 - Make sure conda environment is activated
 - Some packages might need system libraries:
@@ -294,6 +374,45 @@ cd /mnt/c/Users/YourName/Documents/
 - Native Linux tools and performance
 - Better compatibility with many Python packages
 - Access to both Windows and Linux filesystems
+
+---
+
+## 🎮 GPU vs CPU: What's the Difference?
+
+### Do I Need a GPU?
+
+**Short answer: No!** This project works perfectly fine without a GPU.
+
+### What's the Difference?
+
+| Feature | With GPU (CUDA) | Without GPU (CPU-only) |
+|---------|----------------|------------------------|
+| **Installation Size** | ~2-3GB (includes CUDA) | ~200MB (smaller) |
+| **Setup Time** | 10-20 minutes | 5-10 minutes |
+| **Local LLM Speed** | 5-10x faster | Slower but works |
+| **Retrieval-Only Mode** | Same speed | Same speed ✅ |
+| **Cloud API Models** | Same speed | Same speed ✅ |
+| **Recommended Models** | TinyLlama, Phi-2, Phi-3 | TinyLlama, Cloud APIs |
+| **Power Usage** | Higher | Lower |
+| **Learning RAG Concepts** | Same | Same ✅ |
+
+### Our Recommendation:
+
+- **Have NVIDIA GPU?** → Use GPU version for better performance with local models
+- **No GPU or laptop?** → Use CPU version + Cloud APIs (Groq free tier is great!)
+- **Just learning?** → Either works perfectly! Retrieval-only mode is identical on both
+
+### How We Help You Choose:
+
+Our setup scripts automatically detect your GPU and recommend the right version:
+```bash
+# Automatic detection
+./setup.sh        # Linux/WSL
+setup.bat         # Windows
+
+# Or check manually
+python detect_gpu.py
+```
 
 ---
 

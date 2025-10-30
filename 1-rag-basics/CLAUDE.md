@@ -349,6 +349,222 @@ Answer Generated: ✅ (with source citations)
 
 ---
 
-**Status**: Complete flexible RAG system with multiple backends, web interface, and full documentation.
+## Session Date: 2025-10-30
 
-**Last Updated**: 2025-10-26 15:45 UTC
+### What We Accomplished
+
+✅ **Smart GPU Detection & Installation System**
+- Created `detect_gpu.py` - Automatic GPU detection utility
+- Created `setup.sh` and `setup.bat` - Intelligent setup scripts
+- Automatic conda TOS acceptance
+- GPU-aware package installation (CPU-only vs GPU with CUDA)
+- Saves ~2.5GB bandwidth for students without GPUs
+
+**Key Innovation**: Smart recommendation system
+```
+🔍 Detecting GPU capabilities...
+💻 No GPU detected (CPU-only mode)
+
+💡 Recommendation: Install CPU-only version (smaller, no CUDA)
+Follow this recommendation? (Y/n): [Enter]
+🔄 Installing recommended version...
+```
+
+✅ **Requirements Files Split**
+- `requirements-gpu.txt` - CUDA support (~2-3GB)
+- `requirements-cpu.txt` - CPU-only (~200MB)
+- `requirements-base.txt` - Base dependencies only
+- Fixed: Changed `--index-url` to `--extra-index-url` for proper PyPI + PyTorch index usage
+
+✅ **Pre-Chunked Document Support (Major Feature)**
+- Two input formats:
+  - `*_chunks.json` - JSON format with rich metadata
+  - `*_chunks.txt` - Simple text format with `---` separators
+- Automatic detection and handling
+- Mix auto-chunked and pre-chunked in same folder
+- Full metadata support
+
+**Example JSON Format**:
+```json
+[
+  {
+    "content": "Machine learning is...",
+    "metadata": {"source": "ML Intro", "topic": "Definition"}
+  }
+]
+```
+
+**Example Text Format**:
+```
+---
+First chunk content...
+META: source=Doc, topic=Introduction
+
+---
+Second chunk content...
+META: source=Doc, topic=Details
+```
+
+✅ **Updated RAG Engine (`rag_flexible.py`)**
+- `load_prechunked_json()` - Load JSON chunks
+- `load_prechunked_txt()` - Load text chunks
+- Enhanced `load_documents()` - Auto-detect file types
+- Updated `split_documents()` - Skip pre-chunked, process others
+- Track statistics for UI display
+
+✅ **Enhanced Web Interface (`app_simple.py`)**
+- Shows chunk statistics (pre-chunked vs auto-chunked)
+- Source display indicates chunking method:
+  - 📦 Pre-chunked chunks (with metadata)
+  - ✂️ Auto-chunked chunks
+- Updated tips and documentation links
+- Fixed Gradio deprecation warning
+
+✅ **Comprehensive Documentation**
+- `PRECHUNKED_FORMAT.md` - Complete guide (700+ lines)
+  - Format specifications
+  - Best practices
+  - Use cases and examples
+  - Common mistakes
+  - Conversion tips
+- `data/README_CHUNKS.md` - Quick reference
+- `data/example_chunks.json` - Working JSON example
+- `data/example_chunks.txt` - Working text example
+- `GPU_SETUP_INFO.md` - GPU detection system documentation
+- Updated `README.md` with all new features
+- Updated `SETUP_GUIDE.md` with GPU detection
+
+✅ **URL Fix**
+- Updated all scripts to show correct URLs (`localhost:7860` not `0.0.0.0:7860`)
+- Clear warnings in startup scripts
+- Better messaging in `app_simple.py`
+
+### Technical Achievements
+
+**Files Created/Modified:**
+```
+New Files:
+- detect_gpu.py
+- setup.sh, setup.bat
+- requirements-gpu.txt, requirements-cpu.txt, requirements-base.txt
+- PRECHUNKED_FORMAT.md
+- GPU_SETUP_INFO.md
+- data/example_chunks.json
+- data/example_chunks.txt
+- data/README_CHUNKS.md
+
+Modified Files:
+- rag_flexible.py (added pre-chunked support)
+- app_simple.py (enhanced UI)
+- start_web_interface.sh, start_web_interface.bat (URL fix + GPU status)
+- README.md (comprehensive updates)
+- SETUP_GUIDE.md (GPU detection info)
+- CLAUDE.md (this file)
+```
+
+**Working Flow:**
+```
+1. Student runs: ./setup.sh
+2. Script detects: No GPU → recommends CPU version
+3. Student presses: Enter (accepts recommendation)
+4. Installs: CPU-only PyTorch (~200MB vs ~2GB)
+5. Student adds: PDFs + pre-chunked JSON files
+6. System loads: Both formats automatically
+7. Web UI shows: Statistics and chunk types
+8. Student queries: See which chunks were used (pre vs auto)
+```
+
+### Test Results
+
+```
+Testing pre-chunked document loading...
+📂 Loading documents from data...
+  ✓ Loaded pre-chunked: example_chunks.json (5 chunks)
+  ✓ Loaded pre-chunked: example_chunks.txt (5 chunks)
+  ✓ Loaded: CIU_REGULATIONS_ON_STUDENT_ADISORY_SERVICES.pdf
+
+📚 Total documents loaded: 13
+   ✓ 10 pre-chunked
+   ✓ 3 will be auto-chunked
+
+✂️  Splitting documents...
+   Created 23 auto-chunks
+   Kept 10 pre-chunks as-is
+
+📑 Total chunks: 33
+
+✅ Test successful!
+```
+
+### System Impact
+
+**Bandwidth Savings:**
+- Students without GPU: ~2.5GB saved per installation
+- 100 students (50% no GPU): ~125GB total saved
+- Setup time: Reduced from 20min → 10min for CPU-only
+
+**Pre-Chunked Use Cases:**
+1. **FAQ Systems** - Each Q&A pair precisely chunked
+2. **Definitions** - Term-by-term control
+3. **Code Documentation** - Function-level chunks
+4. **Course Material** - Manually curated with metadata
+5. **Quality Control** - Review and refine each chunk
+
+**Student Benefits:**
+- ✅ Full control over chunking when needed
+- ✅ Automatic chunking for quick experiments
+- ✅ Mix both approaches in same project
+- ✅ Rich metadata support
+- ✅ Clear visibility in UI
+
+### Lessons Learned
+
+1. **Smart Defaults Matter**: Auto-detecting GPU and defaulting to "Yes" makes setup painless
+
+2. **Package Indices**: `--extra-index-url` (additive) vs `--index-url` (exclusive) - critical for PyTorch + PyPI packages
+
+3. **Flexibility is Key**: Giving students both auto-chunking AND pre-chunking opens up advanced use cases while keeping it simple for beginners
+
+4. **UI Transparency**: Showing chunk statistics and types helps students understand what's happening
+
+5. **Documentation is Critical**: Comprehensive guides (`PRECHUNKED_FORMAT.md`) with examples prevent confusion
+
+6. **Import Changes**: langchain updates require `langchain_core.documents.Document` instead of `langchain.schema.Document`
+
+### Next Steps (Potential Future Enhancements)
+
+**Could Be Added:**
+- [ ] Chunk quality metrics/validation
+- [ ] Automatic chunk generation from documents (AI-assisted)
+- [ ] Chunk editing interface in web UI
+- [ ] Export retrieved chunks to pre-chunked format
+- [ ] Hybrid search (semantic + keyword)
+- [ ] Chunk size recommendations based on content type
+- [ ] Batch conversion tools for existing documents
+
+### Performance Notes
+
+**Setup Time:**
+- GPU detection: < 1 second
+- Environment creation: ~2-3 minutes
+- CPU-only installation: ~5-10 minutes
+- GPU installation: ~10-20 minutes
+
+**Runtime:**
+- Pre-chunked file loading: Instant
+- System shows clear progress for all operations
+- Web interface responsive and informative
+
+### References
+
+- LangChain: https://python.langchain.com/
+- ChromaDB: https://docs.trychroma.com/
+- Sentence Transformers: https://www.sbert.net/
+- Gradio: https://www.gradio.app/
+- PyTorch: https://pytorch.org/
+
+---
+
+**Status**: Complete flexible RAG system with multiple backends, web interface, full documentation, GPU detection, and pre-chunked document support.
+
+**Last Updated**: 2025-10-30 10:30 UTC

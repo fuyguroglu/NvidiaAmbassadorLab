@@ -88,12 +88,20 @@ def ask_question(question, history):
             response = f"### 💬 Answer\n\n{result['answer']}\n\n"
 
             if result['sources']:
-                response += f"### 📚 Sources\n\n"
+                response += f"\n### 📚 Sources\n\n"
                 response += f"Based on {len(result['sources'])} document chunk(s):\n\n"
 
                 for i, doc in enumerate(result['sources'], 1):
                     source = Path(doc.metadata.get('source', 'Unknown')).name
-                    response += f"{i}. `{source}`\n"
+                    # Check if pre-chunked and show metadata
+                    if doc.metadata.get('pre_chunked', False):
+                        topic = doc.metadata.get('topic', '')
+                        if topic:
+                            response += f"{i}. 📦 `{source}` (Pre-chunked: {topic})\n"
+                        else:
+                            response += f"{i}. 📦 `{source}` (Pre-chunked)\n"
+                    else:
+                        response += f"{i}. ✂️ `{source}` (Auto-chunked)\n"
 
         return response
 
@@ -109,20 +117,33 @@ def get_system_info():
         return "System not initialized yet."
 
     info = f"""
-### System Information
+### 🖥️ System Information
 
+**Backend Configuration:**
 - **Backend**: {rag_system.backend_config.name}
 - **Device**: {rag_system.device.upper()}
 - **RAM Required**: {rag_system.backend_config.ram_required}
+
+**Document Processing:**
 - **Embedding Model**: {rag_system.embedding_model_name}
-- **Chunk Size**: {rag_system.chunk_size} characters
+- **Chunk Size**: {rag_system.chunk_size} characters (for auto-chunking)
 - **Chunks Retrieved**: {rag_system.k_retrieve} per query
 """
 
+    # Get chunk statistics if available
+    if hasattr(rag_system, '_chunk_stats'):
+        stats = rag_system._chunk_stats
+        info += f"\n**Chunk Statistics:**\n"
+        if stats.get('prechunked', 0) > 0:
+            info += f"- 📦 **Pre-chunked**: {stats['prechunked']} (manual control)\n"
+        if stats.get('autochunked', 0) > 0:
+            info += f"- ✂️ **Auto-chunked**: {stats['autochunked']} (automatic)\n"
+        info += f"- 📑 **Total Chunks**: {stats.get('total', 0)}\n"
+
     if rag_system.vectorstore:
-        info += f"- **Documents Indexed**: ✅ Ready\n"
+        info += f"\n**Status**: ✅ Documents indexed and ready\n"
     else:
-        info += f"- **Documents Indexed**: ❌ Not ready\n"
+        info += f"\n**Status**: ❌ Not ready - initialize system first\n"
 
     return info
 
@@ -176,7 +197,8 @@ with gr.Blocks(title="RAG System - Student Demo", theme=gr.themes.Soft()) as dem
             chatbot = gr.Chatbot(
                 height=400,
                 label="Conversation",
-                show_label=True
+                show_label=True,
+                type="tuples"  # Explicitly set to avoid deprecation warning
             )
 
             with gr.Row():
@@ -198,14 +220,28 @@ with gr.Blocks(title="RAG System - Student Demo", theme=gr.themes.Soft()) as dem
     gr.Markdown("""
     ---
 
-    ### 📚 Tips:
+    ### 📚 Document Formats Supported:
+
+    **Automatic Chunking:**
+    - 📄 `.pdf` files - Automatically split into chunks
+    - 📝 `.txt` files - Automatically split into chunks
+
+    **Pre-Chunked (Advanced):**
+    - 📦 `*_chunks.json` - JSON format with metadata
+    - 📦 `*_chunks.txt` - Simple text format with separators
+
+    You can **mix both formats** in the `data/` folder! See `PRECHUNKED_FORMAT.md` for details.
+
+    ### 💡 Tips:
     - **Retrieval Only** mode shows you the relevant document chunks without generating an answer (great for learning!)
     - **Local models** (TinyLlama, Phi) download automatically on first use
     - **API models** require API keys set as environment variables
-    - Add your documents to the `data/` folder (supports .pdf and .txt files)
+    - **Pre-chunked files** give you precise control over chunk boundaries
 
     ### 🔧 Need Help?
-    Check the `SETUP_GUIDE.md` file for detailed installation and troubleshooting instructions!
+    - Setup: Check `SETUP_GUIDE.md`
+    - Pre-chunking: Check `PRECHUNKED_FORMAT.md`
+    - Examples: See `data/example_chunks.json` and `data/example_chunks.txt`
     """)
 
     # Event handlers
@@ -247,6 +283,15 @@ if __name__ == "__main__":
     print("\nThe interface will open in your web browser automatically.")
     print("If it doesn't, copy the URL shown below and paste it in your browser.")
     print("\nPress Ctrl+C to stop the server.")
+    print("=" * 70)
+    print("🌐 Starting web interface...")
+    print("=" * 70)
+    print()
+    print("📍 Access the interface at:")
+    print("   • Local: http://localhost:7860")
+    print("   • Network: http://127.0.0.1:7860")
+    print()
+    print("Press Ctrl+C to stop the server")
     print("=" * 70 + "\n")
 
     demo.launch(
