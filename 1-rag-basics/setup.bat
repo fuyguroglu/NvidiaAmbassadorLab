@@ -67,16 +67,23 @@ REM Run GPU detection and store result
 echo [96mDetecting GPU capabilities...[0m
 echo.
 
-REM Check for GPU silently
-nvidia-smi >nul 2>nul
-if %ERRORLEVEL% EQU 0 (
-    echo [92mNVIDIA GPU detected![0m
-    set "RECOMMENDED=GPU version with CUDA support"
-    set "RECOMMENDED_FILE=requirements-gpu.txt"
+REM Check which requirements file to use
+if exist "requirements-cpu.txt" (
+    REM Check for GPU silently
+    nvidia-smi >nul 2>nul
+    if %ERRORLEVEL% EQU 0 (
+        echo [92mNVIDIA GPU detected![0m
+        set "RECOMMENDED=GPU version with CUDA support"
+        set "RECOMMENDED_FILE=requirements-gpu.txt"
+    ) else (
+        echo [96mNo GPU detected (CPU-only mode)[0m
+        set "RECOMMENDED=CPU-only version (smaller, no CUDA)"
+        set "RECOMMENDED_FILE=requirements-cpu.txt"
+    )
 ) else (
-    echo [96mNo GPU detected (CPU-only mode)[0m
-    set "RECOMMENDED=CPU-only version (smaller, no CUDA)"
-    set "RECOMMENDED_FILE=requirements-cpu.txt"
+    echo [96mUsing standard requirements.txt[0m
+    set "RECOMMENDED=standard installation"
+    set "RECOMMENDED_FILE=requirements.txt"
 )
 echo.
 
@@ -111,18 +118,26 @@ if /i "%confirm%"=="Y" (
 
     if "%choice%"=="1" (
         echo [96mInstalling GPU version with CUDA support...[0m
-        pip install -r requirements-gpu.txt
+        if exist "requirements-gpu.txt" (
+            pip install -r requirements-gpu.txt
+        ) else (
+            pip install -r requirements.txt
+        )
         set INSTALL_SUCCESS=%ERRORLEVEL%
     ) else if "%choice%"=="2" (
         echo [96mInstalling CPU-only version...[0m
-        pip install -r requirements-cpu.txt
+        if exist "requirements-cpu.txt" (
+            pip install -r requirements-cpu.txt
+        ) else (
+            pip install -r requirements.txt
+        )
         set INSTALL_SUCCESS=%ERRORLEVEL%
     ) else if "%choice%"=="3" (
         echo [96mSkipping installation[0m
         echo.
         echo To install manually:
         echo   conda activate nvidia_rag
-        echo   pip install -r requirements-cpu.txt  REM or requirements-gpu.txt
+        echo   pip install -r %RECOMMENDED_FILE%
         pause
         exit /b 0
     ) else (
