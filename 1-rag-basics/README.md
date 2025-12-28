@@ -19,7 +19,7 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 - 💻 **Hardware Flexible** - Works on laptops with 4GB RAM to workstations with GPUs
 - 📚 **Multi-format Support** - PDF, TXT, and pre-chunked documents (JSON/TXT)
 - ✂️ **Flexible Chunking** - Auto-chunk documents OR use your own pre-made chunks
-- 🚀 **Easy Setup** - Conda environment + pip install, ready in minutes
+- 🚀 **Easy Setup** - Works with conda OR Python venv, ready in minutes
 - 🔧 **Configurable** - Adjust chunk size, retrieval count, and backends
 
 ## 🏗️ Architecture
@@ -60,16 +60,13 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 ├── rag_flexible.py             # Main RAG implementation
 ├── app_simple.py               # Gradio web interface
 ├── detect_gpu.py              # GPU detection utility
-├── setup.sh                   # Automatic setup for Linux/WSL
-├── setup.bat                  # Automatic setup for Windows
+├── setup.sh                   # Automatic setup for Linux/WSL (conda OR venv)
+├── setup.bat                  # Automatic setup for Windows (conda OR venv)
 ├── test_system.py              # Test with retrieval-only mode
 ├── test_with_llm.py            # Test with LLM backend
-├── start_web_interface.sh      # Linux launcher script
-├── start_web_interface.bat     # Windows launcher script
-├── requirements-gpu.txt        # GPU version dependencies
-├── requirements-cpu.txt        # CPU-only dependencies
-├── requirements-base.txt       # Base dependencies
-├── requirements.txt            # Legacy (kept for compatibility)
+├── start_web_interface.sh      # Linux launcher script (auto-detects environment)
+├── start_web_interface.bat     # Windows launcher script (auto-detects environment)
+├── requirements.txt            # All dependencies
 ├── SETUP_GUIDE.md             # Detailed setup instructions
 ├── PRECHUNKED_FORMAT.md       # Pre-chunked document guide (NEW!)
 ├── GPU_SETUP_INFO.md          # GPU detection system info
@@ -83,7 +80,7 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 
 ### 1. Setup Environment
 
-**🎮 We have automatic setup that detects your GPU!**
+**🎮 Automatic setup that works with conda OR Python venv!**
 
 **Automatic Setup (Recommended):**
 
@@ -96,27 +93,30 @@ setup.bat
 ```
 
 The script will:
-- ✅ Detect if you have an NVIDIA GPU
-- ✅ Install the right PyTorch version (CPU-only or GPU with CUDA)
-- ✅ Save bandwidth (CPU version is ~200MB vs ~2-3GB for GPU)
-- ✅ Set up everything automatically
+- ✅ **Auto-detect** if you have conda or Python venv
+- ✅ **Detect** if you have an NVIDIA GPU
+- ✅ **Install** the right PyTorch version (CPU-only or GPU with CUDA)
+- ✅ **Save bandwidth** (CPU version is ~200MB vs ~2-3GB for GPU)
+- ✅ **Set up everything** automatically
+
+**No conda?** No problem! The script will use Python's built-in `venv` instead.
 
 **Manual Setup:**
 
 See [SETUP_GUIDE.md](SETUP_GUIDE.md) for detailed instructions!
 
 ```bash
-# Create conda environment
+# Option A: Using conda
 conda create -n nvidia_rag python=3.11 -y
 conda activate nvidia_rag
 
-# Check your GPU
-python detect_gpu.py
+# Option B: Using venv (if no conda)
+python3 -m venv .venv
+source .venv/bin/activate  # Linux/Mac
+# .venv\Scripts\activate   # Windows
 
-# Install dependencies based on your hardware:
-pip install -r requirements-gpu.txt  # If you have NVIDIA GPU
-# OR
-pip install -r requirements-cpu.txt  # If you don't have GPU (smaller!)
+# Install dependencies
+pip install -r requirements.txt
 ```
 
 ### 2. Add Your Documents
@@ -166,13 +166,17 @@ Then open **http://localhost:7860** in your browser!
 ## 🎮 Using the Web Interface
 
 1. **Select Backend** - Choose based on your hardware:
-   - **Retrieval Only** - Works on ANY computer (< 1GB RAM)
-   - **TinyLlama** - Small local model (3-4GB RAM)
-   - **Phi-2/Phi-3** - Better local models (5-6GB RAM)
-   - **Groq** - Fast cloud API (Free tier available!)
-   - **OpenAI/Anthropic** - Premium cloud APIs
+   - **Retrieval Only** - Works on ANY computer (< 1GB RAM, **0GB download**)
+   - **TinyLlama** - Small local model (3-4GB RAM, **~2.2GB download**)
+   - **Phi-2** - Better local model (5-6GB RAM, **~5-6GB download** ⚠️)
+   - **Phi-3 Mini** - Advanced local model (5-6GB RAM, **~4-5GB download**)
+   - **Groq** - Fast cloud API (**Free tier available!**, **0GB download**)
+   - **OpenAI/Anthropic** - Premium cloud APIs (**0GB download**)
 
-2. **Click "🚀 Initialize System"** - Wait for setup (downloads model on first run)
+2. **Click "🚀 Initialize System"** - Wait for setup
+   - **First-time local models**: Downloads from HuggingFace (can take 5-20 min on slow connections)
+   - **API models**: Instant setup (no downloads!)
+   - **Tip**: Use API backends or retrieval-only for quick testing
 
 3. **Ask Questions** - Type your questions and get answers with source citations!
 
@@ -194,17 +198,25 @@ Perfect for:
 
 ### Local LLM Models
 
-#### TinyLlama
+#### TinyLlama (Recommended for testing)
 - **RAM**: ~3-4GB
 - **Download**: ~2.2GB (first time only)
 - **Speed**: Fast on GPU, acceptable on CPU
 - **Quality**: Basic but functional
+- **Best for**: Quick testing, low bandwidth
 
-#### Phi-2 / Phi-3 Mini
+#### Phi-2
 - **RAM**: ~5-6GB
-- **Download**: ~5GB (first time only)
+- **Download**: ~5-6GB ⚠️ (first time only)
 - **Speed**: Medium
 - **Quality**: Good instruction following
+- **Note**: Large download - consider API backends if bandwidth is limited
+
+#### Phi-3 Mini
+- **RAM**: ~5-6GB
+- **Download**: ~4-5GB (first time only)
+- **Speed**: Medium-fast
+- **Quality**: Better instruction following
 
 ### Cloud API Models
 

@@ -1,22 +1,40 @@
 #!/bin/bash
 
-# Simple launcher script for the RAG web interface
-# Works on Linux, macOS, and WSL
+# Launcher script for the RAG web interface
+# Works with conda OR Python venv - automatically detects what's available
 
 echo "========================================="
 echo "  RAG System - Web Interface Launcher"
 echo "========================================="
 echo ""
 
-# Activate conda environment
-echo "Activating conda environment..."
-source ~/miniconda3/etc/profile.d/conda.sh
-conda activate nvidia_rag
+# Detect and activate environment
+if command -v conda &> /dev/null && conda env list | grep -q "^nvidia_rag "; then
+    # Conda environment exists
+    echo "Activating conda environment 'nvidia_rag'..."
+    eval "$(conda shell.bash hook)"
+    conda activate nvidia_rag
 
-if [ $? -ne 0 ]; then
-    echo "❌ Failed to activate conda environment 'nvidia_rag'"
-    echo "Please make sure the environment is created:"
-    echo "  conda create -n nvidia_rag python=3.11 -y"
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to activate conda environment 'nvidia_rag'"
+        echo "Please run setup first: ./setup.sh"
+        exit 1
+    fi
+elif [ -d ".venv" ]; then
+    # Python venv exists
+    echo "Activating Python virtual environment..."
+    source .venv/bin/activate
+
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to activate virtual environment"
+        echo "Please run setup first: ./setup.sh"
+        exit 1
+    fi
+else
+    echo "❌ No environment found!"
+    echo ""
+    echo "Please run setup first:"
+    echo "  ./setup.sh"
     exit 1
 fi
 
@@ -30,7 +48,7 @@ if command -v nvidia-smi &> /dev/null; then
         echo "🎮 GPU detected and PyTorch CUDA enabled!"
     else
         echo "⚠️  GPU detected but PyTorch CUDA not available"
-        echo "   Consider reinstalling with: pip install -r requirements-gpu.txt"
+        echo "   Running in CPU mode"
     fi
 else
     echo "💻 Running in CPU mode"

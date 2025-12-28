@@ -431,9 +431,18 @@ class FlexibleRAG:
         print("\n⛓️  Creating QA chain...")
 
         from langchain_classic.chains import RetrievalQA
-        from langchain_core.prompts import PromptTemplate
+        from langchain_core.prompts import PromptTemplate, ChatPromptTemplate
 
-        template = """Use the following pieces of context to answer the question at the end.
+        # Use ChatPromptTemplate for chat models, PromptTemplate for local models
+        if self.backend in ["groq", "openai", "anthropic"]:
+            # Chat models need messages with role/content structure
+            prompt = ChatPromptTemplate.from_messages([
+                ("system", "You are a helpful assistant. Use the following context to answer questions. If you don't know the answer based on the context, just say that you don't know, don't try to make up an answer. Keep your answer concise and relevant to the question."),
+                ("human", "Context:\n{context}\n\nQuestion: {question}")
+            ])
+        else:
+            # Local models use simple string template
+            template = """Use the following pieces of context to answer the question at the end.
 If you don't know the answer based on the context, just say that you don't know, don't try to make up an answer.
 Keep your answer concise and relevant to the question.
 
@@ -444,10 +453,10 @@ Question: {question}
 
 Answer:"""
 
-        prompt = PromptTemplate(
-            template=template,
-            input_variables=["context", "question"]
-        )
+            prompt = PromptTemplate(
+                template=template,
+                input_variables=["context", "question"]
+            )
 
         self.qa_chain = RetrievalQA.from_chain_type(
             llm=self.llm,

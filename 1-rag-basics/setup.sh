@@ -1,7 +1,7 @@
 #!/bin/bash
 
-# Smart Setup Script for RAG System (Linux/WSL)
-# Automatically detects GPU and installs appropriate dependencies
+# Smart Setup Script for RAG System (Linux/WSL/macOS)
+# Works with conda OR Python venv - automatically detects what's available
 
 set -e  # Exit on error
 
@@ -11,81 +11,152 @@ echo "  NVIDIA Ambassador Lab"
 echo "=========================================="
 echo ""
 
-# Check if conda is available
-if ! command -v conda &> /dev/null; then
-    echo "❌ Conda not found!"
-    echo ""
-    echo "Please install Miniconda first:"
-    echo "  wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh"
-    echo "  bash Miniconda3-latest-Linux-x86_64.sh"
-    echo ""
-    exit 1
-fi
+# Detect available Python environment tools
+USE_CONDA=false
+if command -v conda &> /dev/null; then
+    USE_CONDA=true
+    echo "✅ Conda found: $(conda --version)"
+    ENV_NAME="nvidia_rag"
+    ACTIVATE_CMD="conda activate nvidia_rag"
+else
+    echo "ℹ️  Conda not found - will use Python venv instead"
 
-echo "✅ Conda found: $(conda --version)"
+    # Check if python3 is available
+    if ! command -v python3 &> /dev/null; then
+        echo "❌ Python 3 not found!"
+        echo ""
+        echo "Please install Python 3.8 or higher first:"
+        echo ""
+        echo "  Ubuntu/Debian:"
+        echo "    sudo apt update && sudo apt install python3 python3-pip python3-venv"
+        echo ""
+        echo "  Fedora/RHEL:"
+        echo "    sudo dnf install python3 python3-pip"
+        echo ""
+        echo "  macOS:"
+        echo "    brew install python3"
+        echo "    (or download from https://www.python.org/downloads/)"
+        echo ""
+        exit 1
+    fi
+
+    echo "✅ Python found: $(python3 --version)"
+    ENV_NAME=".venv"
+    ACTIVATE_CMD="source .venv/bin/activate"
+fi
 echo ""
 
-# Accept conda TOS if needed (silently)
-conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main 2>/dev/null || true
-conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r 2>/dev/null || true
+# Setup environment based on available tool
+if [ "$USE_CONDA" = true ]; then
+    # CONDA SETUP
+    echo "🐍 Using Conda for environment management"
+    echo ""
 
-# Check if environment already exists
-if conda env list | grep -q "nvidia_rag"; then
-    echo "⚠️  Environment 'nvidia_rag' already exists"
-    echo ""
-    read -p "Do you want to remove and recreate it? (y/n): " -n 1 -r
-    echo ""
-    if [[ $REPLY =~ ^[Yy]$ ]]; then
-        echo "Removing existing environment..."
-        conda env remove -n nvidia_rag -y
-        echo "✅ Removed"
+    # Accept conda TOS if needed (silently)
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main 2>/dev/null || true
+    conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r 2>/dev/null || true
+
+    # Check if environment already exists
+    if conda env list | grep -q "^nvidia_rag "; then
+        echo "⚠️  Environment 'nvidia_rag' already exists"
         echo ""
+        read -p "Do you want to remove and recreate it? (y/n): " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "Removing existing environment..."
+            conda env remove -n nvidia_rag -y
+            echo "✅ Removed"
+            echo ""
+            # Create new environment
+            echo "📦 Creating conda environment 'nvidia_rag' with Python 3.11..."
+            conda create -n nvidia_rag python=3.11 -y
+            echo "✅ Environment created"
+            echo ""
+        else
+            echo "Keeping existing environment."
+            echo ""
+        fi
     else
-        echo "Keeping existing environment. Activating..."
-        eval "$(conda shell.bash hook)"
-        conda activate nvidia_rag
-        echo "✅ Activated nvidia_rag environment"
+        # Create conda environment
+        echo "📦 Creating conda environment 'nvidia_rag' with Python 3.11..."
+        conda create -n nvidia_rag python=3.11 -y
+        echo "✅ Environment created"
         echo ""
-        # Continue to installation check instead of exiting
     fi
-else
-    # Create conda environment
-    echo "📦 Creating conda environment 'nvidia_rag' with Python 3.11..."
-    conda create -n nvidia_rag python=3.11 -y
-
-    echo "✅ Environment created"
-    echo ""
 
     # Activate environment
     echo "🔧 Activating environment..."
     eval "$(conda shell.bash hook)"
     conda activate nvidia_rag
-
     echo "✅ Environment activated"
+    echo ""
+
+else
+    # VENV SETUP
+    echo "🐍 Using Python venv for environment management"
+    echo ""
+
+    # Check if venv already exists
+    if [ -d ".venv" ]; then
+        echo "⚠️  Virtual environment '.venv' already exists"
+        echo ""
+        read -p "Do you want to remove and recreate it? (y/n): " -n 1 -r
+        echo ""
+        if [[ $REPLY =~ ^[Yy]$ ]]; then
+            echo "Removing existing environment..."
+            rm -rf .venv
+            echo "✅ Removed"
+            echo ""
+            # Create new environment
+            echo "📦 Creating Python virtual environment..."
+            python3 -m venv .venv
+            echo "✅ Environment created"
+            echo ""
+        else
+            echo "Keeping existing environment."
+            echo ""
+        fi
+    else
+        # Create venv
+        echo "📦 Creating Python virtual environment..."
+        python3 -m venv .venv
+        echo "✅ Environment created"
+        echo ""
+    fi
+
+    # Activate environment
+    echo "🔧 Activating environment..."
+    source .venv/bin/activate
+    echo "✅ Environment activated"
+    echo ""
+
+    # Upgrade pip
+    echo "⬆️  Upgrading pip..."
+    pip install --upgrade pip
     echo ""
 fi
 
-# Run GPU detection and store result
+# Run GPU detection
 echo "🔍 Detecting GPU capabilities..."
 echo ""
 
 # Check for GPU silently
 if command -v nvidia-smi &> /dev/null && nvidia-smi &> /dev/null; then
-    GPU_DETECTED=0
+    GPU_DETECTED=true
     echo "✅ NVIDIA GPU detected!"
 else
-    GPU_DETECTED=1
+    GPU_DETECTED=false
     echo "💻 No GPU detected (CPU-only mode)"
 fi
 echo ""
 
-# Determine recommendation
-if [ $GPU_DETECTED -eq 0 ]; then
+# Determine recommendation and install command
+if [ "$GPU_DETECTED" = true ]; then
     RECOMMENDED="GPU version with CUDA support"
-    RECOMMENDED_FILE="requirements-gpu.txt"
+    INSTALL_CMD="pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121 && pip install -r requirements.txt"
 else
     RECOMMENDED="CPU-only version (smaller, no CUDA)"
-    RECOMMENDED_FILE="requirements-cpu.txt"
+    INSTALL_CMD="pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu && pip install -r requirements.txt"
 fi
 
 # Ask user for confirmation
@@ -101,7 +172,7 @@ echo ""
 if [[ -z $REPLY ]] || [[ $REPLY =~ ^[Yy]$ ]]; then
     echo ""
     echo "🔄 Installing recommended version..."
-    pip install -r "$RECOMMENDED_FILE"
+    eval "$INSTALL_CMD"
     INSTALL_SUCCESS=$?
 else
     echo ""
@@ -120,20 +191,22 @@ else
     case $REPLY in
         1)
             echo "🎮 Installing GPU version with CUDA support..."
-            pip install -r requirements-gpu.txt
+            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu121
+            pip install -r requirements.txt
             INSTALL_SUCCESS=$?
             ;;
         2)
             echo "💻 Installing CPU-only version..."
-            pip install -r requirements-cpu.txt
+            pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+            pip install -r requirements.txt
             INSTALL_SUCCESS=$?
             ;;
         3)
             echo "⏭️  Skipping installation"
             echo ""
             echo "To install manually:"
-            echo "  conda activate nvidia_rag"
-            echo "  pip install -r requirements-cpu.txt  # or requirements-gpu.txt"
+            echo "  $ACTIVATE_CMD"
+            echo "  pip install -r requirements.txt"
             exit 0
             ;;
         *)
@@ -150,8 +223,8 @@ if [ $INSTALL_SUCCESS -ne 0 ]; then
     echo ""
     echo "Please check the error messages above and try again."
     echo "You can also install manually:"
-    echo "  conda activate nvidia_rag"
-    echo "  pip install -r $RECOMMENDED_FILE"
+    echo "  $ACTIVATE_CMD"
+    echo "  pip install -r requirements.txt"
     exit 1
 fi
 
@@ -164,7 +237,7 @@ echo "=========================================="
 echo ""
 echo "1. Add documents to the 'data/' folder"
 echo "2. Run the system:"
-echo "   conda activate nvidia_rag"
+echo "   $ACTIVATE_CMD"
 echo "   ./start_web_interface.sh"
 echo ""
 echo "Or test with:"

@@ -22,8 +22,10 @@ Welcome! This guide will help you set up and run your first RAG (Retrieval-Augme
 
 ## Prerequisites
 
-- **Python**: Version 3.9 or higher (we recommend 3.11)
-- **Conda** or **Miniconda**: For managing Python environments
+- **Python**: Version 3.8 or higher (we recommend 3.11)
+- **Environment Manager** (Optional): Conda/Miniconda OR Python's built-in venv
+  - **Conda**: Preferred but not required
+  - **No conda?** No problem! We'll use Python's built-in venv instead
 - **RAM**: At least 4GB (more is better!)
 - **Disk Space**:
   - **CPU-only**: ~3-5GB (smaller PyTorch, no CUDA)
@@ -35,7 +37,10 @@ Welcome! This guide will help you set up and run your first RAG (Retrieval-Augme
 
 ## 🚀 Quick Start (Recommended)
 
-**We now have an automatic setup script that detects your GPU and installs the right version!**
+**We now have an automatic setup script that:**
+- ✅ Works with conda OR Python venv (no conda required!)
+- ✅ Detects your GPU and installs the right PyTorch version
+- ✅ Installs all dependencies automatically
 
 ### Windows Quick Setup
 ```cmd
