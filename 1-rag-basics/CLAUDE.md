@@ -750,8 +750,94 @@ pip install langchain-text-splitters langchain-groq langchain-openai \
 - LangChain Prompts: https://python.langchain.com/docs/modules/model_io/prompts/
 - Python venv: https://docs.python.org/3/library/venv.html
 
+### Known Issues & Future Improvements
+
+#### Retrieval Quality Issue
+
+**Problem Observed**:
+- Query: "What are the duties of student advisors?"
+- Current behavior: Retrieves chunks about "faculty board assigning student advisors" instead of actual advisor duties
+- Root cause: Semantic similarity captures keywords ("student", "advisors") but misses intent difference
+- Teaching value: Great demonstration of RAG retrieval limitations!
+
+**Model Behavior Issues**:
+- Phi-2 hallucinates despite prompt instructions (makes up policies not in documents)
+- Shows importance of model quality for instruction-following in RAG systems
+- Excellent teaching moment: Compare retrieval-only → Phi-2 → Groq/GPT-4
+
+#### Proposed Retrieval Improvements (Future Work)
+
+**Quick Wins (Easy to Implement):**
+
+1. **Better Embedding Model**
+   - Current: `all-MiniLM-L6-v2` (fast but basic)
+   - Upgrade options:
+     - `all-mpnet-base-v2` (better semantic understanding)
+     - `BAAI/bge-small-en-v1.5` (newer, state-of-the-art)
+   - Trade-off: Slightly slower but better quality
+   - Implementation: One-line change in `rag_flexible.py`
+
+2. **Configurable k (retrieval count)**
+   - Allow users to adjust k_retrieve (currently 3)
+   - More chunks = better chance of finding right info, but more noise
+   - Could add to web UI as slider
+
+3. **Pre-chunked Document Optimization**
+   - Already supported via `*_chunks.json` format
+   - Create example with clean separation:
+     - Chunk 1: "Student Advisor Duties" (pure duties list)
+     - Chunk 2: "Faculty Board Responsibilities" (assignment process)
+   - Gives students manual control over chunk quality
+
+**Advanced Improvements (Student Project Extensions):**
+
+4. **Hybrid Search (Semantic + BM25)**
+   ```python
+   # Combine vector similarity with keyword matching
+   # Libraries: rank_bm25 or LangChain's EnsembleRetriever
+   # Benefits: Catches exact keyword matches + semantic meaning
+   ```
+   - Great student project: Compare pure semantic vs hybrid
+   - Requires: BM25 index alongside ChromaDB
+
+5. **Reranking**
+   ```python
+   # Two-stage retrieval:
+   # 1. Get top-10 with semantic search
+   # 2. Rerank with cross-encoder model (more expensive but accurate)
+   from sentence_transformers import CrossEncoder
+   reranker = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
+   ```
+   - Improves precision significantly
+   - Adds latency but worth it for quality
+
+6. **Query Expansion**
+   - Rephrase queries multiple ways
+   - "What are student advisor duties?" →
+     - "What tasks must student advisors perform?"
+     - "What are student advisor responsibilities?"
+   - Retrieve for all variants, deduplicate results
+
+7. **Metadata Filtering**
+   - Add topic/section metadata to chunks
+   - Filter retrieval by metadata when available
+   - Example: Only search chunks tagged "advisor_duties"
+
+**Implementation Priority** (for future sessions):
+1. ✅ Better embedding model (5 min, big impact)
+2. ✅ Pre-chunked example with clean separation (teaching tool)
+3. ⏭️ Hybrid search (good student extension project)
+4. ⏭️ Reranking (advanced student project)
+5. ⏭️ Query expansion (research project)
+
+**Metrics to Add** (for evaluation):
+- Retrieval precision@k (are top-k results relevant?)
+- Answer faithfulness (does answer match sources?)
+- Answer relevance (does answer address question?)
+- Could use RAGAS framework for automated evaluation
+
 ---
 
-**Status**: Complete flexible RAG system with multiple backends, web interface, full documentation, GPU detection, pre-chunked document support, and conda-optional setup.
+**Status**: Complete flexible RAG system with multiple backends, web interface, full documentation, GPU detection, pre-chunked document support, and conda-optional setup. Retrieval quality improvements identified for future work.
 
 **Last Updated**: 2025-12-28
