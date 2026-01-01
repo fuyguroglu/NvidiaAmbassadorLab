@@ -26,8 +26,9 @@ sentence-transformers>=2.2.2
 pypdf>=3.17.0
 pypdfium2>=4.24.0
 
-# Web Interface
-gradio>=4.8.0,<5.0.0  # Pin to v4.x - v5+ has breaking changes
+# Web Interface (Flask is recommended - more reliable than Gradio)
+flask>=2.3.0  # Simple, stable web framework
+gradio>=4.8.0  # Optional alternative (can have compatibility issues)
 
 # Utilities
 numpy>=1.24.0

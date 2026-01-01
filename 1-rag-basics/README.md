@@ -15,7 +15,7 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 ## ✨ Key Features
 
 - 🎛️ **Multiple Backend Options** - From retrieval-only (works everywhere!) to local LLMs and cloud APIs
-- 🌐 **Beautiful Web Interface** - User-friendly Gradio UI, no command-line needed
+- 🌐 **Beautiful Web Interface** - Choose Flask (recommended, reliable) or Gradio (alternative)
 - 💻 **Hardware Flexible** - Works on laptops with 4GB RAM to workstations with GPUs
 - 📚 **Multi-format Support** - PDF, TXT, and pre-chunked documents (JSON/TXT)
 - ✂️ **Flexible Chunking** - Auto-chunk documents OR use your own pre-made chunks
@@ -58,17 +58,20 @@ Unlike traditional chatbots that rely only on training data, RAG systems answer 
 1-rag-basics/
 ├── config.py                   # Backend configurations
 ├── rag_flexible.py             # Main RAG implementation
-├── app_simple.py               # Gradio web interface
+├── app_flask.py                # Flask web interface (RECOMMENDED)
+├── app_simple.py               # Gradio web interface (alternative)
 ├── detect_gpu.py              # GPU detection utility
 ├── setup.sh                   # Automatic setup for Linux/WSL (conda OR venv)
 ├── setup.bat                  # Automatic setup for Windows (conda OR venv)
 ├── test_system.py              # Test with retrieval-only mode
 ├── test_with_llm.py            # Test with LLM backend
-├── start_web_interface.sh      # Linux launcher script (auto-detects environment)
-├── start_web_interface.bat     # Windows launcher script (auto-detects environment)
+├── start_flask.sh              # Flask launcher (Linux/WSL) - RECOMMENDED
+├── start_flask.bat             # Flask launcher (Windows) - RECOMMENDED
+├── start_web_interface.sh      # Gradio launcher (Linux/WSL) - alternative
+├── start_web_interface.bat     # Gradio launcher (Windows) - alternative
 ├── requirements.txt            # All dependencies
 ├── SETUP_GUIDE.md             # Detailed setup instructions
-├── PRECHUNKED_FORMAT.md       # Pre-chunked document guide (NEW!)
+├── PRECHUNKED_FORMAT.md       # Pre-chunked document guide
 ├── GPU_SETUP_INFO.md          # GPU detection system info
 ├── CLAUDE.md                  # Development notes
 └── data/                      # Your documents go here!
@@ -146,22 +149,43 @@ cp definitions_chunks.txt data/
 
 ### 3. Launch Web Interface
 
-**Linux/WSL:**
+**✅ Flask (Recommended - Most Reliable):**
+
+Linux/WSL:
+```bash
+./start_flask.sh
+```
+
+Windows:
+```bash
+start_flask.bat
+```
+
+Or manually:
+```bash
+python app_flask.py
+```
+
+**🔄 Gradio (Alternative):**
+
+Linux/WSL:
 ```bash
 ./start_web_interface.sh
 ```
 
-**Windows:**
-```
+Windows:
+```bash
 start_web_interface.bat
 ```
 
-**Or manually:**
+Or manually:
 ```bash
 python app_simple.py
 ```
 
 Then open **http://localhost:7860** in your browser!
+
+> **💡 Why Flask?** Flask is more reliable across different systems (Windows, Linux, WSL) and has fewer dependency issues. Gradio can sometimes have compatibility problems, especially in WSL environments.
 
 ## 🎮 Using the Web Interface
 
